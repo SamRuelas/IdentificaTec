@@ -15,17 +15,18 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".MifareControl"
+        <activity
+            android:name=".MifareControl"
             android:launchMode="singleInstance"
             android:theme="@style/Theme.Transparent">
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>
+
             <meta-data
                 android:name="android.nfc.action.TECH_DISCOVERED"
                 android:resource="@xml/filter_nfc" />
         </activity>
-
         <activity
             android:name=".NavDrawerActivity"
             android:label="@string/title_activity_nav_drawer"

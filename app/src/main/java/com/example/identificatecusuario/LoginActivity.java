@@ -29,6 +29,7 @@ public class LoginActivity extends AppCompatActivity {
     EditText contra;
     Button boton;
     String serialNum;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -37,52 +38,54 @@ public class LoginActivity extends AppCompatActivity {
         email = findViewById(R.id.email);
         contra = findViewById(R.id.password);
         boton = findViewById(R.id.login);
+        System.out.println(FirebaseAuth.getInstance().getCurrentUser());
+        if (FirebaseAuth.getInstance().getCurrentUser()!=null) {
+            startActivity(new Intent(LoginActivity.this, NavDrawerActivity.class));
+            finish();
+        }
 
         boton.setOnClickListener(
                 new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        final String emailText = email.getText().toString();
+                        final String emailText = email.getText().toString().toUpperCase();
                         String contraText = contra.getText().toString();
 
                         final FirebaseAuth mAuth = FirebaseAuth.getInstance();
-
                         FirebaseAuth.getInstance().signInWithEmailAndPassword(emailText, contraText)
                                 .addOnCompleteListener(LoginActivity.this, new OnCompleteListener<AuthResult>() {
                                     @Override
                                     public void onComplete(@NonNull Task<AuthResult> task) {
                                         if (task.isSuccessful()) {
 
-                                            // Write a message to the database
-                                            DatabaseReference database = FirebaseDatabase.getInstance()
-                                                    .getReference(emailText.split("@")[0]+ "/serialNumber/");
-                                           database.addValueEventListener( new ValueEventListener() {
-                                               @Override
-                                               public void onDataChange(DataSnapshot dataSnapshot) {
-                                                   serialNum = dataSnapshot.getValue().toString();
-                                                   Toast.makeText(getApplicationContext(), serialNum,Toast.LENGTH_SHORT).show();
-                                                   Intent intent = new Intent(LoginActivity.this, MifareControl.class);
-                                                   intent.putExtra("mode", "readUID");
-                                                   startActivityForResult(intent, 1);
-                    /*
-                                                   startActivity(new Intent(LoginActivity.this, NavDrawerActivity.class));
-                                                   finish();
-                                                   */
+                                            try {
+                                                // Write a message to the database
+                                                DatabaseReference database = FirebaseDatabase.getInstance()
+                                                        .getReference(emailText.split("@")[0] + "/serialNumber/");
+                                                database.addValueEventListener(new ValueEventListener() {
+                                                    @Override
+                                                    public void onDataChange(DataSnapshot dataSnapshot) {
+                                                        serialNum = dataSnapshot.getValue().toString();
+                                                        Toast.makeText(getApplicationContext(), serialNum, Toast.LENGTH_SHORT).show();
+                                                        Intent intent = new Intent(LoginActivity.this, MifareControl.class);
+                                                        intent.putExtra("mode", "readUID");
+                                                        startActivityForResult(intent, 1);
+                                                    }
 
-                                               }
+                                                    @Override
+                                                    public void onCancelled(DatabaseError error) {
+                                                    }
 
-                                               @Override
-                                               public void onCancelled(DatabaseError error) {
-                                               }
-
-                                           });
-
+                                                });
+                                            } catch (Exception e) {
+                                                Toast.makeText(LoginActivity.this, e.getMessage(), Toast.LENGTH_LONG).show();
+                                            }
                                         } else {
                                             Toast.makeText(LoginActivity.this, "Autenticación faillida.", Toast.LENGTH_SHORT).show();
                                         }
                                     }
                                 });
-                        
+
                     }
                 }
         );
@@ -95,14 +98,13 @@ public class LoginActivity extends AppCompatActivity {
         super.onActivityResult(requestCode, resultCode, data);
         Log.i("Received", "RC: " + requestCode + ", RESc" + resultCode);
         if (resultCode == RESULT_OK && requestCode == 1) {
-           if (data.getStringExtra("UID").equals(serialNum)) {
-               Toast.makeText(getApplicationContext(), "Acceso permitido", Toast.LENGTH_SHORT).show();
-               startActivity(new Intent(LoginActivity.this, NavDrawerActivity.class));
-               finish();
-           }
-           else {
-               Toast.makeText(getApplicationContext(), "Credencial errónea", Toast.LENGTH_SHORT).show();
-           }
+            if (data.getStringExtra("UID").equals(serialNum)) {
+                Toast.makeText(getApplicationContext(), "Acceso permitido", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(LoginActivity.this, NavDrawerActivity.class));
+                finish();
+            } else {
+                Toast.makeText(getApplicationContext(), "Credencial errónea", Toast.LENGTH_SHORT).show();
+            }
         }
     }
 }
