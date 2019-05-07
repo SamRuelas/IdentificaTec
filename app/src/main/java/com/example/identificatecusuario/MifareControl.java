@@ -39,6 +39,9 @@ public class MifareControl extends AppCompatActivity {
     private int blocksToRead;
     private ArrayList<String> blocksRead = new ArrayList<>();
     private ArrayList<Integer> valueBlocksRead = new ArrayList<>();
+    private int valueBlockNumber;
+    private String operation;
+    private int quantity;
 
     Converters convert = new Converters();
 
@@ -147,6 +150,14 @@ public class MifareControl extends AppCompatActivity {
             title = "Listo para leer bloques de valor";
             message = "Acerca la credencial para leer muchos bloques de valor";
         }
+        else if(mode.equals("operateValueBlock")) {
+            valueBlockNumber = getIntent().getIntExtra("valueBlockNumber", 0);
+            operation = getIntent().getStringExtra("operation");
+            quantity = getIntent().getIntExtra("quantity", 0);
+
+            title = "Listo para operar bloque de valor";
+            message = "Acerca la credencial para operar bloque de valor";
+        }
         AlertDialog.Builder builder = new AlertDialog.Builder(this)
                 .setTitle(title)
                 .setMessage(message)
@@ -180,6 +191,41 @@ public class MifareControl extends AppCompatActivity {
             i.putExtra("UID", hexUID);
             setResult(Activity.RESULT_OK, i);
             finish();
+        }
+    }
+
+    void resolveOperationValueBlock(Intent intent) {
+        Log.i("Operate", operation+" "+valueBlockNumber+" "+quantity);
+        String action = intent.getAction();
+        if (NfcAdapter.ACTION_TECH_DISCOVERED.equals(action)) {
+            Tag tagFromIntent = intent.getParcelableExtra(NfcAdapter.EXTRA_TAG);
+            MifareClassic mfc = MifareClassic.get(tagFromIntent);
+            Boolean noErrors = true;
+
+            try {
+                mfc.connect();
+
+                if (authenticateSector(valueBlockNumber, KEYA, true, mfc)) {
+                    if (operation.equals("increment")) {
+                        mfc.increment(valueBlockNumber, quantity);
+                    } else if (operation.equals("decrement")) {
+                        mfc.decrement(valueBlockNumber, quantity);
+                    }
+                } else {
+                    noErrors = false;
+                }
+
+                mfc.close();
+                mTagDialog.cancel();
+
+                Log.i("No errores", noErrors.toString());
+                Intent i = new Intent();
+                i.putExtra("operateValueBlockNoErrors", noErrors);
+                setResult(Activity.RESULT_OK, i);
+                finish();
+            } catch (Exception e) {
+                Log.e(TAG, e.getLocalizedMessage());
+            }
         }
     }
 
@@ -400,6 +446,9 @@ public class MifareControl extends AppCompatActivity {
         }
         else if(mode.equals("readManyDataBlocks")) {
             resolveReadManyBlocks(intent, false);
+        }
+        else if(mode.equals("operateValueBlock")) {
+            resolveOperationValueBlock(intent);
         }
     }
 

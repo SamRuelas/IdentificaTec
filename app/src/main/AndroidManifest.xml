@@ -19,7 +19,8 @@
         <activity
             android:name=".MifareControl"
             android:launchMode="singleInstance"
-            android:theme="@style/Theme.Transparent">
+            android:theme="@style/Theme.Transparent"
+            android:label=" ">
             <intent-filter>
                 <action android:name="android.nfc.action.TECH_DISCOVERED" />
             </intent-filter>

@@ -28,61 +28,27 @@ import com.paypal.android.sdk.payments.PayPalService;
 import com.paypal.android.sdk.payments.PaymentActivity;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 
 
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link CargarSaldo.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link CargarSaldo#newInstance} factory method to
- * create an instance of this fragment.
- */
 public class CargarSaldo extends Fragment {
     TextView textBalance;
     Button myButton;
     EditText text;
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PARAM1 = "param1";
-    private static final String ARG_PARAM2 = "param2";
-
-    // TODO: Rename and change types of parameters
-    private String mParam1;
-    private String mParam2;
-
-    private OnFragmentInteractionListener mListener;
+    String mat;
+    String balance;
 
     public CargarSaldo() {
         // Required empty public constructor
     }
 
-    /**
-     * Use this factory method to create a new instance of
-     * this fragment using the provided parameters.
-     *
-     * @param param1 Parameter 1.
-     * @param param2 Parameter 2.
-     * @return A new instance of fragment CargarSaldo.
-     */
-    // TODO: Rename and change types and number of parameters
-    public static CargarSaldo newInstance(String param1, String param2) {
-        CargarSaldo fragment = new CargarSaldo();
-        Bundle args = new Bundle();
-        args.putString(ARG_PARAM1, param1);
-        args.putString(ARG_PARAM2, param2);
-        fragment.setArguments(args);
-        return fragment;
-    }
 
     PayPalConfiguration config;
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
         config = new PayPalConfiguration()
                 .environment(PayPalConfiguration.ENVIRONMENT_SANDBOX)//Cambiar a production para sacarlo
                 .clientId("AdVdIgjfckcC878KhDb4YK2zwdj9FhU6_RgRWqd-6ySPQcONk0EkQllatfm-5wd5qWjPImfkoRMtgHQj");
@@ -91,8 +57,6 @@ public class CargarSaldo extends Fragment {
 
         i.putExtra(PayPalService.EXTRA_PAYPAL_CONFIGURATION, config);
         getContext().startService(i);
-
-
     }
 
     @Override
@@ -105,14 +69,15 @@ public class CargarSaldo extends Fragment {
 
 
         final FirebaseAuth user = FirebaseAuth.getInstance();
-        String mat = user.getCurrentUser().getEmail().toUpperCase().split("@")[0];
+        mat = user.getCurrentUser().getEmail().toUpperCase().split("@")[0];
         textBalance = view.findViewById(R.id.textBalance);
         DatabaseReference db = FirebaseDatabase.getInstance().getReference(mat);
         db.addValueEventListener(
                 new ValueEventListener() {
                     @Override
                     public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                        textBalance.setText(dataSnapshot.child("balance").getValue().toString());
+                        balance = dataSnapshot.child("balance").getValue().toString();
+                        textBalance.setText(balance);
                     }
 
                     @Override
@@ -126,12 +91,10 @@ public class CargarSaldo extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        // Inflate the layout for this fragment
-        View view = inflater.inflate(R.layout.fragment_cargar_saldo, container, false);
-
         return inflater.inflate(R.layout.fragment_cargar_saldo, container, false);
     }
+
+    double amount;
     public View.OnClickListener onClicks = new View.OnClickListener() {
 
         @Override
@@ -140,7 +103,7 @@ public class CargarSaldo extends Fragment {
             if(temp == null || temp.isEmpty()){
 
             }else{
-                double amount = Double.parseDouble(temp);
+                amount = Double.parseDouble(temp);
 
                 PayPalPayment payment = new PayPalPayment(BigDecimal.valueOf(amount), "MXN", "IdentificaTec", PayPalPayment.PAYMENT_INTENT_SALE);
                 Intent intent = new Intent(getContext(), PaymentActivity.class);
@@ -153,22 +116,41 @@ public class CargarSaldo extends Fragment {
     };
 
 
-
-    // TODO: Rename method, update argument and hook method into UI event
-    public void onButtonPressed(Uri uri) {
-        if (mListener != null) {
-            mListener.onFragmentInteraction(uri);
-        }
-    }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
         if(requestCode==123){
             if(resultCode== Activity.RESULT_OK){
                 //CARGAR DINERO A CREDENCIAL
-            }
 
+                //Leer saldo
+                Intent intent = new Intent(getContext(), MifareControl.class);
+                intent.putExtra("mode", "writeManyValueBlocks");
+                ArrayList<Integer> writeValueBlocks = new ArrayList<>();
+                writeValueBlocks.add((int)amount+Integer.parseInt(balance));
+                intent.putExtra("writeValueBlocks", writeValueBlocks);
+                intent.putExtra("initialBlock", 2);
+                startActivityForResult(intent, 1);
+            }
+        }
+        if (requestCode==1 && resultCode==Activity.RESULT_OK) {
+            final DatabaseReference ref = FirebaseDatabase.getInstance().getReference(mat);
+            ref.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    int balance = Integer.parseInt(dataSnapshot.child("balance").getValue().toString());
+                    ref.child("balance").setValue(balance+(int)amount);
+
+                    ref.child("deposits").child(new SimpleDateFormat("dd:MM:yyyy HH:mm:ss").format(new Date()))
+                            .setValue((int)amount);
+                    Toast.makeText(getContext(), "Saldo actualizado", Toast.LENGTH_SHORT).show();
+                }
+
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                }
+            });
         }
     }
 
@@ -176,26 +158,5 @@ public class CargarSaldo extends Fragment {
     public void onDestroy() {
         getContext().stopService(new Intent(getContext(), PayPalService.class));
         super.onDestroy();
-    }
-
-    @Override
-    public void onDetach() {
-        super.onDetach();
-        mListener = null;
-    }
-
-    /**
-     * This interface must be implemented by activities that contain this
-     * fragment to allow an interaction in this fragment to be communicated
-     * to the activity and potentially other fragments contained in that
-     * activity.
-     * <p>
-     * See the Android Training lesson <a href=
-     * "http://developer.android.com/training/basics/fragments/communicating.html"
-     * >Communicating with Other Fragments</a> for more information.
-     */
-    public interface OnFragmentInteractionListener {
-        // TODO: Update argument type and name
-        void onFragmentInteraction(Uri uri);
     }
 }
