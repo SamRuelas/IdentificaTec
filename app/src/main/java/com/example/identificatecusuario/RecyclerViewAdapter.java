@@ -10,6 +10,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.bumptech.glide.Glide;
 
@@ -18,16 +19,16 @@ import java.util.ArrayList;
 public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapter.ViewHolder>{
     private static final String TAG = "RecyclerViewAdapter";
 
-    private ArrayList<String> mCantidades = new ArrayList<>();
+    private ArrayList<String[]> mCantidades = new ArrayList<>();
     private ArrayList<String> mImages = new ArrayList<>();
-    private ArrayList<String > mFechas = new ArrayList<>();
+    //private ArrayList<String > mFechas = new ArrayList<>();
     private Context mContext;
 
-    public RecyclerViewAdapter(Context mContext, ArrayList<String> mCantidades, ArrayList<String> mImages, ArrayList<String> mFechas) {
+    public RecyclerViewAdapter(Context mContext, ArrayList<String[]> mCantidades, ArrayList<String> mImages) {
         this.mCantidades = mCantidades;
         this.mImages = mImages;
         this.mContext = mContext;
-        this.mFechas = mFechas;
+        //this.mFechas = mFechas;
     }
 
     @NonNull
@@ -40,12 +41,20 @@ public class RecyclerViewAdapter extends RecyclerView.Adapter<RecyclerViewAdapte
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+        String temp[] = mCantidades.get(position);
         Glide.with(mContext)
                 .asBitmap()
-                .load(mImages.get(position))
+                .load(temp[3])
                 .into(holder.image);
-        holder.cantidad.setText(mCantidades.get(position));
-        holder.fechas.setText(mFechas.get(position));
+
+        if(temp[2] == "charges"){
+            holder.cantidad.setText("-$"+temp[1]);
+        }else if (temp[2]=="deposits"){
+            holder.cantidad.setText("+$"+temp[1]);
+        }
+
+        holder.fechas.setText(temp[0]);
+        //holder.fechas.setText(mFechas.get(position));
     }
 
     @Override

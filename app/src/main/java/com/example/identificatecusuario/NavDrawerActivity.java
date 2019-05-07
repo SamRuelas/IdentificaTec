@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.util.Log;
 import android.view.View;
 import android.support.v4.view.GravityCompat;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -19,6 +20,7 @@ import android.support.v4.app.Fragment;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import com.bumptech.glide.Glide;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.database.DataSnapshot;
@@ -27,10 +29,13 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 import com.google.firebase.database.ValueEventListener;
 
+import org.w3c.dom.Text;
+
 public class NavDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
     TextView textName;
     TextView textEmail;
+    View view;
 
     DatabaseReference _db;
     String uid;
@@ -55,7 +60,7 @@ public class NavDrawerActivity extends AppCompatActivity
         drawer.addDrawerListener(toggle);
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
-
+        loadUserInformation();
         changeFragment( new MyAccountFragment(), R.id.container_fragment);
     }
 
@@ -131,41 +136,30 @@ public class NavDrawerActivity extends AppCompatActivity
     }
     private void loadUserInformation() {
         FirebaseAuth mAuth  = FirebaseAuth.getInstance();
-        FirebaseUser user = mAuth.getCurrentUser();
-        _db = FirebaseDatabase.getInstance().getReference("/users");
+        final String mat = mAuth.getCurrentUser().getEmail().split("@")[0].toUpperCase();
 
-
-        if (user != null) {
-            if (user.getUid() != null) {
-                uid = user.getUid();
-            }
-            if (user.getEmail() != null) {
-                //var displayName : String = user!!.getDisplayName()!!
-                //nav_view.getHeaderView(0).mail_text.text = user!!.email
-            }
+        if(mat != null){
             DatabaseReference ref = FirebaseDatabase.getInstance().getReference();
+            ref.addListenerForSingleValueEvent(new ValueEventListener() {
+                @Override
+                public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                    String userName  = dataSnapshot.child(mat).child("name").getValue().toString();
+                    if(userName != "null"){
+                        LinearLayout l = findViewById(R.id.navLayout);
+                        TextView t = l.findViewById(R.id.name_text);
+                        t.setText(userName);
+                        TextView te = l.findViewById(R.id.textView);
+                        te.setText(mat);
+                    }
+                }
 
-           /*ref.addValueEventListener(new ValueEventListener() {
-                                         @Override
-                                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
-                                             String userName = dataSnapshot.child("users").child(uid).child("username").getValue().toString();
-                                             if (userName != "null") {
-                                                 setContentView(R.layout.nav_header_nav_drawer);
-                                                 //NavigationView(R.layout.)
-                                                 TextView textView = findViewById(R.id.n);
+                @Override
+                public void onCancelled(@NonNull DatabaseError databaseError) {
 
-
-
-                                             }
-                                         }
-
-                                         @Override
-                                         public void onCancelled(@NonNull DatabaseError databaseError) {
-
-                                         }
-                                     }*/
+                }
 
 
+            });
         }
 
     }
