@@ -2,6 +2,7 @@ package com.example.identificatecusuario;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.view.View;
@@ -15,12 +16,24 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.support.v4.app.Fragment;
+import android.widget.LinearLayout;
+import android.widget.TextView;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseReference;
+import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 public class NavDrawerActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
+    TextView textName;
+    TextView textEmail;
 
+    DatabaseReference _db;
+    String uid;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -90,13 +103,15 @@ public class NavDrawerActivity extends AppCompatActivity
         // Handle navigation view item clicks here.
         int id = item.getItemId();
 
-        if (id == R.id.movimientos) {
-            changeFragment( new MovimientosFragment(), R.id.container_fragment);
-        } else if (id == R.id.nav_gallery) {
+        if (id == R.id.micredencial) {
+            changeFragment( new MyAccountFragment(), R.id.container_fragment);
+        } else if (id == R.id.micuenta) {
+            changeFragment(new MovimientosFragment(), R.id.container_fragment);
+        } else if (id == R.id.lostandfound) {
+            changeFragment(new LostandFound(), R.id.container_fragment);
 
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_tools) {
+        } else if (id == R.id.cargarsaldo) {
+            changeFragment(new CargarSaldo(), R.id.container_fragment);
 
         } else if (id == R.id.nav_share) {
 
@@ -113,5 +128,45 @@ public class NavDrawerActivity extends AppCompatActivity
     private void changeFragment(Fragment fragment, int idContainer) {
         getSupportFragmentManager().beginTransaction()
                 .replace(idContainer, fragment).commit();
+    }
+    private void loadUserInformation() {
+        FirebaseAuth mAuth  = FirebaseAuth.getInstance();
+        FirebaseUser user = mAuth.getCurrentUser();
+        _db = FirebaseDatabase.getInstance().getReference("/users");
+
+
+        if (user != null) {
+            if (user.getUid() != null) {
+                uid = user.getUid();
+            }
+            if (user.getEmail() != null) {
+                //var displayName : String = user!!.getDisplayName()!!
+                //nav_view.getHeaderView(0).mail_text.text = user!!.email
+            }
+            DatabaseReference ref = FirebaseDatabase.getInstance().getReference();
+
+           /*ref.addValueEventListener(new ValueEventListener() {
+                                         @Override
+                                         public void onDataChange(@NonNull DataSnapshot dataSnapshot) {
+                                             String userName = dataSnapshot.child("users").child(uid).child("username").getValue().toString();
+                                             if (userName != "null") {
+                                                 setContentView(R.layout.nav_header_nav_drawer);
+                                                 //NavigationView(R.layout.)
+                                                 TextView textView = findViewById(R.id.n);
+
+
+
+                                             }
+                                         }
+
+                                         @Override
+                                         public void onCancelled(@NonNull DatabaseError databaseError) {
+
+                                         }
+                                     }*/
+
+
+        }
+
     }
 }
